@@ -44,6 +44,19 @@ public class ListString {
         }
     }
 
+    public static class IndexOutOfListException extends Exception {
+        private final int index;
+
+        public int getIndex() {
+            return index;
+        }
+
+        public IndexOutOfListException(String message, int ind) {
+            super(message);
+            index = ind;
+        }
+    }
+
     //Публичный конструктор класса списка
     public ListString() {
         head = new StringItem(null, StringItem.SIZE);

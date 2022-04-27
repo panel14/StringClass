@@ -48,7 +48,7 @@ public class Main {
             System.out.println("-----Исключение IndexOutOfListException:");
             list.setCharAt(50, 'c');
 
-        } catch (IndexOutOfListException e) {
+        } catch (ListString.IndexOutOfListException e) {
 
             e.printStackTrace();
             System.out.println(e.getIndex());
