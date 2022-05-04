@@ -52,7 +52,7 @@ public class ListString {
         }
 
         public IndexOutOfListException(String message, int ind) {
-            super(message);
+            super(message + ": " + ind);
             index = ind;
         }
     }
@@ -60,7 +60,6 @@ public class ListString {
     //Публичный конструктор класса списка
     public ListString() {
         head = new StringItem(null, StringItem.SIZE);
-        head.next = null;
         tail = head;
     }
 
@@ -123,6 +122,7 @@ public class ListString {
     }
 
     //Функция, создаёт новый блок размером size
+    //Расписать зачем отдельный метод
     private StringItem initNewItem(int size) {
         return new StringItem(null, size);
     }
@@ -135,7 +135,7 @@ public class ListString {
 
     //Функция, проверяет, находится ли индекс вне границ длины. Если да, то выбрасывается исключение
     private void checkIndexOutException(int index) throws IndexOutOfListException {
-        if (index > length())
+        if (index > length() || index < 0)
             throw new IndexOutOfListException("Index out of range", index);
     }
 
