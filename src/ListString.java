@@ -24,6 +24,16 @@ public class ListString {
             symbols = new char[size];
         }
 
+        //Копирующий конструктор
+        private StringItem(StringItem stringItem) {
+            this.size = stringItem.size;
+            this.symbols = new char[this.size];
+            for (int i = 0; i < this.size; i++) {
+                this.symbols[i] = stringItem.symbols[i];
+            }
+            this.next = stringItem.next;
+        }
+
         //Метод добавления следующего символа в массив символов
         public void addSymbol(char ch) {
             symbols[size] = ch;
@@ -45,15 +55,8 @@ public class ListString {
     }
 
     public static class IndexOutOfListException extends Exception {
-        private final int index;
-
-        public int getIndex() {
-            return index;
-        }
-
         public IndexOutOfListException(String message, int ind) {
             super(message + ": " + ind);
-            index = ind;
         }
     }
 
@@ -63,6 +66,41 @@ public class ListString {
         tail = head;
     }
 
+    //Конструктор, принимает строку
+    public ListString(String string) {
+        head = new StringItem(null, StringItem.SIZE);
+        tail = head;
+
+        StringItem currentItem = head;
+        for (int i = 0; i < string.length(); i++) {
+            currentItem.addSymbol(string.charAt(i));
+            if ((i + 1) % StringItem.SIZE == 0) {
+                StringItem next = new StringItem(null, StringItem.SIZE);
+                currentItem.next = next;
+                currentItem = next;
+                tail = currentItem;
+            }
+        }
+    }
+
+    //Копирующий конструктор (чтобы основной лист оставался неизменным, при изменении listString)
+    public ListString(ListString listString) {
+        head = new StringItem(listString.head);
+        tail = head;
+        StringItem currentItem = listString.head;
+        StringItem copyHead = head;
+
+        currentItem = currentItem.next;
+
+        while (currentItem != null) {
+            StringItem next = new StringItem(currentItem);
+            copyHead.next = next;
+            copyHead = next;
+            tail = next;
+            currentItem = currentItem.next;
+        }
+    }
+
     //Указатель на начало списка
     private StringItem head;
     //Указатель на конец списка
@@ -70,7 +108,7 @@ public class ListString {
 
     //Функция, определяет, можно ли объединить текущий блок и следующий за ним
     //Условие простое - если суммарный размер блоков не превышает максимально допустимый (16) - объединяем
-    boolean is_unite(StringItem block) {
+    private boolean is_unite(StringItem block) {
         return (block.next != null) && (block.size + block.next.size <= StringItem.SIZE);
     }
 
@@ -213,10 +251,12 @@ public class ListString {
 
         int startItemIndex = getItemIndex(start - 1);
         StringItem currentItem = getItemForIndex(startItemIndex);
+        int after = 0;
 
         for (int i = start; i < end; i++) {
-            int pointer = (i - 1) % StringItem.SIZE ;
+            int pointer = (i - after - 1) % (currentItem.size + 1);
             if (pointer == currentItem.size){
+                after += currentItem.size + 1;
                 currentItem = currentItem.next;
                 continue;
             }
@@ -229,7 +269,7 @@ public class ListString {
     //Добавить символ в конец строки
     //Если последний блок заполнен, создадим новый блок
     //Добавим символ в последний блок с помощью функции
-    void append(char ch){
+    public void append(char ch){
         if (tail.size == StringItem.SIZE) {
             StringItem appended = initNewItem(StringItem.SIZE);
             addItem(appended);
@@ -246,7 +286,9 @@ public class ListString {
     //Чтобы склеить списки просто меняем ссылки
     //Конец старого списка склеиваем с началом нового
     //Конец старго списка - это конец добавляемого списка
-    void append(ListString string) {
+    public void append(ListString string) {
+        //Создаём копию добавляемого списка
+        ListString copy = new ListString(string);
         if (head.size < StringItem.SIZE) {
             char[] formHead = new char[head.size ];
 
@@ -260,8 +302,8 @@ public class ListString {
             formTailSymbols[i] = tail.symbols[i];
         tail.symbols = formTailSymbols;
 
-        addItem(string.head);
-        tail = string.tail;
+        addItem(copy.head);
+        tail = copy.tail;
     }
 
     //Добавить в конец строку класса String
@@ -273,10 +315,12 @@ public class ListString {
     }
 
     //Вставить список в любое место списка по индексу
-    void insert(int index, ListString string) throws IndexOutOfListException {
+    public void insert(int index, ListString string) throws IndexOutOfListException {
         //Проверяем индекс
         checkIndexOutException(index);
 
+        //Создаём копию вставляемого списка
+        ListString copy = new ListString(string);
         //Находим индекс блока по индексу вставки
         int itemIndex = getItemIndex(index);
         //Размер вставляемого блока
@@ -285,7 +329,7 @@ public class ListString {
         //Если размер списка, который вставляем кратен 16, значит он состоит из целых блоков, то есть его нужно
         //просто прицепить к старому списку
         if (splitSize == 0) {
-            append(string);
+            append(copy);
         }
         else {
             //Иначе - находим блок, который будем делить
@@ -297,22 +341,23 @@ public class ListString {
             //Как и раньше, создаём новый массив, в него переносим заполненные ячейки старого
             char[] rangedStrTail = new char[string.tail.size];
             for (int i = 0; i < string.tail.size; i++)
-                rangedStrTail[i] = string.tail.symbols[i];
+                rangedStrTail[i] = copy.tail.symbols[i];
 
-            string.tail.symbols = rangedStrTail;
+            copy.tail.symbols = rangedStrTail;
 
             //Меняем сссылки - отделёную часть цепляем к хвосту добавляемого списка
-            string.tail.next = newTail.next;
+            copy.tail.next = newTail.next;
+            copy.tail = copy.tail.next;
 
             //И всю добавляемую часть к блоку, который мы делили
-            newTail.next = string.head;
+            newTail.next = copy.head;
         }
     }
 
     //Функция вставки строки String на позицию index
     //Преобразуем строку в ListString методом append (в пустой ListString добавляем строку)
     //Теперь используем метод выше
-    void insert(int index, String string) throws IndexOutOfListException {
+    public void insert(int index, String string) throws IndexOutOfListException {
         checkIndexOutException(index);
         ListString listString = new ListString();
         listString.append(string);
